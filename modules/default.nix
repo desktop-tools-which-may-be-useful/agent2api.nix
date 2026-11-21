@@ -44,7 +44,7 @@ let
         AGENT2API_ADMIN_PASSWORD="$(cat "$CREDENTIALS_DIRECTORY/${adminPasswordCredential}")"
         export AGENT2API_ADMIN_PASSWORD
       fi
-      exec ${wrapperFor mode} "$@"
+      exec ${wrapperFor mode}/bin/agent2api-${mode} "$@"
     '';
 in
 {
