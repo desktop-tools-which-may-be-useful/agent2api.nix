@@ -72,6 +72,14 @@ AGENT2API_PROXY_PORT=1108 AGENT2API_HOST=127.0.0.1 \
 `host`/`port`/`panelPort`、`adminUser`/`adminPasswordFile`、`allowNoKey`、
 `captcha`、`extraEnvironment`。
 
+## 关于 wasm 插件
+
+`agent2api-wasm-*` 是 wasm 目标（`wasm32-unknown-unknown`）的插件包。当前 headless
+`agent2api-server` 3.4.2 没有 wasm 运行时，会把 `.wasm` 当可执行文件 spawn，报
+`Exec format error (os error 8)`。原生 `agent2api-providers` 已经内置
+`trae` / `zcode` / `zcode-intl` 等同名 provider，所以一般不需要 wasm 包；这些包
+保留给未来支持 wasm 的网关。
+
 ## 维护
 
 `pkgs/plugins.nix` 由上游索引
