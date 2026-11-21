@@ -11,6 +11,10 @@ let
 
   useStateDirectory = builtins.dirOf stateDir == "/var/lib";
 
+  # The plugin directory normally lives under stateDir (covered by
+  # StateDirectory); a custom path needs its own tmpfiles rule and write access.
+  pluginsUnderStateDir = lib.hasPrefix "${stateDir}/" cfg.pluginsDir;
+
   pluginManifest = import ../lib/make-manifest.nix { inherit pkgs; } {
     plugins = cfg.plugins;
   };
@@ -26,7 +30,7 @@ let
       name = "agent2api-${mode}";
       runtimeInputs = [ syncScript ];
       text = ''
-        agent2api-sync-plugins ${mode} "''${AGENT2API_PROXY_HOME:?AGENT2API_PROXY_HOME is not set}" ${pluginManifest.file}
+        agent2api-sync-plugins ${mode} ${lib.escapeShellArg cfg.pluginsDir} ${pluginManifest.file}
         exec ${lib.getExe cfg.package} "$@"
       '';
     };
@@ -107,6 +111,17 @@ in
       type = lib.types.str;
       default = "/var/lib/agent2api";
       description = "Writable directory holding the database and `plugins/`.";
+    };
+
+    pluginsDir = lib.mkOption {
+      type = lib.types.str;
+      default = "${stateDir}/plugins";
+      defaultText = lib.literalExpression ''"''${config.services.agent2api.stateDir}/plugins"'';
+      description = ''
+        Directory the gateway reads plugins and `plugins.json` from. Defaults to
+        `stateDir/plugins`. A path outside `stateDir` is created and made
+        writable by the module.
+      '';
     };
 
     user = lib.mkOption {
@@ -295,8 +310,10 @@ in
           StateDirectory = [ (builtins.baseNameOf stateDir) ];
           StateDirectoryMode = "0700";
         }
-        // lib.optionalAttrs (!useStateDirectory) {
-          ReadWritePaths = [ stateDir ];
+        // {
+          ReadWritePaths =
+            lib.optionals (!useStateDirectory) [ stateDir ]
+            ++ lib.optionals (!pluginsUnderStateDir) [ cfg.pluginsDir ];
         };
       }
     );
@@ -305,6 +322,12 @@ in
       install -d -m 0700 ${lib.escapeShellArg stateDir}
       chown ${cfg.user}:${cfg.group} ${lib.escapeShellArg stateDir}
     '';
+
+    # A custom pluginsDir is outside StateDirectory, so give it an owner and a
+    # tmpfiles rule; the service gets ReadWritePaths above.
+    systemd.tmpfiles.rules = lib.optional (!pluginsUnderStateDir) (
+      "d ${cfg.pluginsDir} 0700 ${cfg.user} ${cfg.group} -"
+    );
 
     networking.firewall = lib.mkIf cfg.openFirewall {
       allowedTCPPorts = [ cfg.port ] ++ lib.optional (cfg.panelPort != null) cfg.panelPort;

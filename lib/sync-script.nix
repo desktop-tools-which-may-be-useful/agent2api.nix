@@ -11,11 +11,9 @@ pkgs.writeShellApplication {
   text = ''
     set -euo pipefail
 
-    mode="''${1:?usage: agent2api-sync-plugins <managed|mutable> <dataDir> <manifest>}"
-    dataDir="''${2:?usage: agent2api-sync-plugins <managed|mutable> <dataDir> <manifest>}"
-    manifest="''${3:?usage: agent2api-sync-plugins <managed|mutable> <dataDir> <manifest>}"
-
-    pluginsDir="$dataDir/plugins"
+    mode="''${1:?usage: agent2api-sync-plugins <managed|mutable> <pluginsDir> <manifest>}"
+    pluginsDir="''${2:?usage: agent2api-sync-plugins <managed|mutable> <pluginsDir> <manifest>}"
+    manifest="''${3:?usage: agent2api-sync-plugins <managed|mutable> <pluginsDir> <manifest>}"
 
     # mutable: initialize once, then never touch the plugin set again.
     if [ "$mode" = mutable ] && [ -f "$pluginsDir/plugins.json" ]; then
