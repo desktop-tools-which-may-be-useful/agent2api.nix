@@ -50,6 +50,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     libayatana-appindicator
     gsettings-desktop-schemas
     hicolor-icon-theme
+    # same upstream Cargo.lock as the server: the cargo-setup-hook sentinel
+    # needs a system jemalloc for tikv-jemalloc-sys and sqlite for
+    # libsqlite3-sys
+    rust-jemalloc-sys
+    sqlite
   ];
 
   doCheck = false;

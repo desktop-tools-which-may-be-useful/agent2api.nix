@@ -9,6 +9,9 @@
   fetchFromGitHub,
   nix-update-script,
   makeWrapper,
+  rust-jemalloc-sys,
+  sqlite,
+  pkg-config,
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "agent2api-server";
@@ -41,7 +44,18 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # classifier case, which moved to the out-of-tree providers plugin.
   patches = [ ./agent2api-server-test-drift.patch ];
 
-  nativeBuildInputs = [ makeWrapper ];
+  # nixpkgs' cargo-setup-hook forces the system-library probes for the
+  # transitive tikv-jemalloc-sys (JEMALLOC_OVERRIDE points at a deliberately
+  # nonexistent sentinel) and libsqlite3-sys (LIBSQLITE3_SYS_USE_PKG_CONFIG=1);
+  # hand them a system jemalloc and sqlite instead of letting the build panic.
+  buildInputs = [
+    rust-jemalloc-sys
+    sqlite
+  ];
+  nativeBuildInputs = [
+    makeWrapper
+    pkg-config
+  ];
 
   preCheck = ''
     export HOME=$(mktemp -d)
