@@ -287,7 +287,13 @@ in
           ProtectKernelLogs = true;
           ProtectControlGroups = true;
           ProtectProc = "invisible";
-          ProcSubset = "pid";
+          # The server samples runtime capacity through sysinfo, whose
+          # get_cgroup_limits() asserts that mem_total != 0. mem_total comes
+          # from /proc/meminfo, which ProcSubset=pid hides, so since 3.5.1 the
+          # gateway aborts on every start with "You need to call
+          # System::refresh_memory before trying to get cgroup limits!".
+          # ProtectProc still hides other processes; keep the rest of /proc.
+          ProcSubset = "all";
           RestrictAddressFamilies = [
             "AF_UNIX"
             "AF_INET"
