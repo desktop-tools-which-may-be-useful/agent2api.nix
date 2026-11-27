@@ -309,6 +309,10 @@ in
             "@system-service"
             "~@privileged"
             "~@resources"
+            # Wasmtime's compilation-cache worker lowers its own priority with
+            # setpriority(), which @resources denies; without this the wasm
+            # plugin host dies with SIGSYS as soon as the engine is built.
+            "setpriority"
           ];
           UMask = "0077";
         }
