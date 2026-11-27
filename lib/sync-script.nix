@@ -4,6 +4,7 @@ pkgs.writeShellApplication {
 
   runtimeInputs = [
     pkgs.coreutils
+    pkgs.diffutils # cmp, used for the registry no-op check
     pkgs.findutils
     pkgs.jq
   ];
