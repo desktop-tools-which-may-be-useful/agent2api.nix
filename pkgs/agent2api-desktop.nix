@@ -15,22 +15,25 @@
   hicolor-icon-theme,
   copyDesktopItems,
   makeDesktopItem,
+  rust-jemalloc-sys,
+  sqlite,
+  zstd,
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "agent2api-desktop";
-  version = "3.4.2";
+  version = "3.5.1";
 
   src = fetchFromGitHub {
     owner = "aimod-cc";
     repo = "Agent2API";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-B2YjdzU/cbgli5WFEy4naDJIwipcAg6vsACcaagiBD0=";
+    hash = "sha256-lud9KIhntrCW652jGK5D3sJdxLg92VROHkxYUe1hT6U=";
   };
 
   cargoRoot = "desktop-tauri/src-tauri";
   buildAndTestSubdir = "desktop-tauri/src-tauri";
 
-  cargoHash = "sha256-nMIYEUCJJ5ZMyKRDw1YreTIX4Rfi5ysg0cIC6JzAWzA=";
+  cargoHash = "sha256-6tiEMf8ukFXNEtt6lpLWCiqD7/VXgy7yL8CewwYUbBs=";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -51,10 +54,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     gsettings-desktop-schemas
     hicolor-icon-theme
     # same upstream Cargo.lock as the server: the cargo-setup-hook sentinel
-    # needs a system jemalloc for tikv-jemalloc-sys and sqlite for
-    # libsqlite3-sys
+    # needs a system jemalloc for tikv-jemalloc-sys, sqlite for
+    # libsqlite3-sys and (since v3.5.1) zstd for zstd-sys
     rust-jemalloc-sys
     sqlite
+    zstd
   ];
 
   doCheck = false;

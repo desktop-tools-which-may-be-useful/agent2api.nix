@@ -11,23 +11,24 @@
   makeWrapper,
   rust-jemalloc-sys,
   sqlite,
+  zstd,
   pkg-config,
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "agent2api-server";
-  version = "3.4.2";
+  version = "3.5.1";
 
   src = fetchFromGitHub {
     owner = "aimod-cc";
     repo = "Agent2API";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-B2YjdzU/cbgli5WFEy4naDJIwipcAg6vsACcaagiBD0=";
+    hash = "sha256-lud9KIhntrCW652jGK5D3sJdxLg92VROHkxYUe1hT6U=";
   };
 
   cargoRoot = "desktop-tauri/src-tauri";
   buildAndTestSubdir = "desktop-tauri/src-tauri";
 
-  cargoHash = "sha256-nMIYEUCJJ5ZMyKRDw1YreTIX4Rfi5ysg0cIC6JzAWzA=";
+  cargoHash = "sha256-6tiEMf8ukFXNEtt6lpLWCiqD7/VXgy7yL8CewwYUbBs=";
 
   cargoBuildFlags = [
     "-p"
@@ -38,19 +39,18 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "agent2api-server"
   ];
 
-  # Upstream v3.4.1 test code predates its own type changes (RequestQuery,
-  # WebDavConfig, send_with_retry); the library and binary compile, only the
-  # test targets fail. Repair the call sites and ignore the obsolete CodeArts
-  # classifier case, which moved to the out-of-tree providers plugin.
-  patches = [ ./agent2api-server-test-drift.patch ];
+  # v3.4.1 needed ./agent2api-server-test-drift.patch to repair stale test
+  # call sites; upstream v3.5.1 fixed them, so no patches are carried now.
 
   # nixpkgs' cargo-setup-hook forces the system-library probes for the
   # transitive tikv-jemalloc-sys (JEMALLOC_OVERRIDE points at a deliberately
-  # nonexistent sentinel) and libsqlite3-sys (LIBSQLITE3_SYS_USE_PKG_CONFIG=1);
-  # hand them a system jemalloc and sqlite instead of letting the build panic.
+  # nonexistent sentinel), libsqlite3-sys (LIBSQLITE3_SYS_USE_PKG_CONFIG=1)
+  # and, since v3.5.1, zstd-sys (ZSTD_SYS_USE_PKG_CONFIG=1); hand them system
+  # libraries instead of letting the build panic.
   buildInputs = [
     rust-jemalloc-sys
     sqlite
+    zstd
   ];
   nativeBuildInputs = [
     makeWrapper

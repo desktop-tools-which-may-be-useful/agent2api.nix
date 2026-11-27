@@ -75,18 +75,43 @@ AGENT2API_PROXY_PORT=1108 AGENT2API_HOST=127.0.0.1 \
 ## 关于 wasm 插件
 
 `agent2api-wasm-*` 是 wasm 目标（`wasm32-unknown-unknown`）的插件包。当前 headless
-`agent2api-server` 3.4.2 没有 wasm 运行时，会把 `.wasm` 当可执行文件 spawn，报
+`agent2api-server` 3.5.1 没有 wasm 运行时，会把 `.wasm` 当可执行文件 spawn，报
 `Exec format error (os error 8)`。原生 `agent2api-providers` 已经内置
 `trae` / `zcode` / `zcode-intl` 等同名 provider，所以一般不需要 wasm 包；这些包
 保留给未来支持 wasm 的网关。
 
 ## 维护
 
-`pkgs/plugins.nix` 由上游索引
+### 手动更新
+
+```sh
+# server / desktop（nix-update，走 GitHub release tag，自动改 src hash 与 cargoHash）
+nix run .#update-server
+nix run .#update-desktop
+
+# 全部 41 个插件：从上游索引重新生成 pkgs/plugins.nix
+nix run .#update-plugins            # 就地更新 version/url/hash/zipSha256
+nix run .#update-plugins -- --check # 只检查是否有更新（CI 可用）
+nix run .#update-plugins -- --add-new  # 同时收录上游新增的插件
+
+# 三者一起跑
+nix run .#update
+```
+
+server / desktop 声明了 `passthru.updateScript`（`nix-update-script`），与
+nixpkgs 一致；插件包共享一个生成文件 `pkgs/plugins.nix`，由上游索引
 [`Agent2plugin/Agent2plugin`](https://github.com/Agent2plugin/Agent2plugin) 的
-`index.json` 生成，每个条目对应 `Agent2Builder/agent2api-providers-releases` 的一个
-release 资产。新增或升级插件时更新该文件的 `version`/`url`/`hash`/`zipSha256`
+`index.json` + 各插件 manifest 生成（`maintainers/update-plugins.py`），每个条目
+对应 `Agent2Builder/agent2api-providers-releases` 的一个 release 资产
 （`hash` 与 `zipSha256` 都来自同一个 zip）。
+
+### 自动更新
+
+`.github/workflows/auto-update.yml` 每天跑一次 `nix run .#update`，先构建
+server（含测试）与 `checks` 验证，通过后自动提交回仓库；构建失败则回滚本次
+改动。做法参考 nixpkgs `maintainers/scripts/update.nix` 与 nur-packages 的
+`helpers/update.nix`（含 Nix ≥ 2.35.5 dirty-tree store copy 的 nix-update
+补丁，见 `lib/update.nix`）。
 
 `checks` 会验证：
 

@@ -50,6 +50,7 @@
 
           default = plugins.agent2api-web-providers;
         }
+        // import ./lib/update.nix { inherit pkgs; }
       );
 
       overlays.default = final: import ./pkgs { pkgs = final; };

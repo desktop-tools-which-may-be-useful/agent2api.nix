@@ -46,7 +46,11 @@ buildAndTestSubdir = "desktop-tauri/src-tauri";
 直接 `Permission denied (os error 13)` → 51 个账号相关用例全挂。修法是
 `preCheck = ''export HOME=$(mktemp -d)''`：用例的库按 `temp_dir()+pid+序号`
 隔离，共用一份 HOME 不会互相污染。**不要**因此关掉 `doCheck`——除这些之外
-534 个用例是过的，且它们真的在跑路由与转发逻辑。
+其余用例是过的（v3.5.1：413 过 / 11 ignore），且它们真的在跑路由与转发逻辑。
+
+v3.4.x 时代需要的 `agent2api-server-test-drift.patch`（修上游测试代码漂移）
+在 v3.5.1 已被上游修复，不再引用（文件保留备查）；v3.5.1 新增 `zstd-sys`
+依赖，cargo hook 同样强制走系统库探针，`buildInputs` 里要多给一个 `zstd`。
 
 ## UI 目录两份，取值方式完全不同
 

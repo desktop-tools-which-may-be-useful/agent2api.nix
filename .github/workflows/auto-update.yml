@@ -1,0 +1,72 @@
+name: 'Auto update packages'
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily, offset from the top of the hour to dodge GitHub's cron rush.
+    - cron: '23 20 * * *'
+permissions:
+  contents: write
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 8192
+          temp-reserve-mb: 1024
+          swap-size-mb: 4096
+          build-mount-path: '/nix'
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            log-lines = 25
+
+      - name: Update packages
+        id: update
+        run: |
+          # update = nix-update for server/desktop + plugins.nix regeneration.
+          # Keep going on partial failure; verification below decides what
+          # gets committed.
+          nix run .#update || echo "update had failures" >&2
+          if [ -n "$(git status --porcelain -- pkgs)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify updated packages
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          # Build the headless server (with its test suite) and run the
+          # repository checks (native ELF interpreters + plugin sync).
+          # The desktop build is left to the regular build workflow: it is
+          # expensive and shares the server's src/cargoHash.
+          if ! nix build .#agent2api-server --no-link &&
+             ! nix build .#agent2api-server --no-link; then
+            echo "server build failed after update; rolling back" >&2
+            git checkout -- pkgs
+            exit 1
+          fi
+          nix build .#checks.x86_64-linux.interpreters .#checks.x86_64-linux.sync --no-link
+
+      - name: Commit back to repository
+        if: steps.update.outputs.changed == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: 'auto: update packages'
+          file_pattern: 'pkgs'
+          commit_user_name: 'github-actions[bot]'
+          commit_user_email: 'github-actions[bot]@users.noreply.github.com'
